@@ -1,0 +1,144 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CivicAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--ink:#eef1f4;--mut:#9fb0bf;--panel:rgba(14,22,30,.86);--line:#2f4152;--yel:#ffc21a;--red:#ff5a4f;--org:#ff9a2e;--grn:#48c283}
+*{box-sizing:border-box}body{margin:0;font:16px/1.5 Barlow,system-ui,sans-serif;color:var(--ink);background:#0d1822;min-height:100vh}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif;line-height:1.05;margin:.2em 0 .4em}h1{font-size:clamp(2.6rem,7vw,4.6rem)}h2{font-size:2rem}h3{font-size:1.3rem}
+a{color:var(--yel)}
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:linear-gradient(#0c1a26 0%,#1c3548 55%,#d98a3d 100%)}
+#bg .sky{position:absolute;bottom:64px;left:0;width:200%;height:55%;animation:pan 140s linear infinite}
+#bg .sky.f{height:38%;animation-duration:70s;opacity:.95}
+@keyframes pan{to{transform:translateX(-50%)}}
+#road{position:absolute;bottom:0;left:0;right:0;height:64px;background:#161b22;border-top:4px solid #3b4652}
+#road:after{content:"";position:absolute;left:0;right:0;top:28px;height:6px;background:repeating-linear-gradient(90deg,var(--yel) 0 46px,transparent 46px 100px);animation:dash 2s linear infinite}
+@keyframes dash{to{background-position-x:-100px}}
+.car{position:absolute;bottom:34px;font-size:30px;animation:drive linear infinite}@keyframes drive{from{left:-80px}to{left:105%}}
+.cone{position:absolute;bottom:60px;font-size:24px}
+#nav,#v{position:relative;z-index:2}
+#nav{display:flex;gap:16px;align-items:center;padding:12px 28px;background:rgba(9,15,21,.9);border-bottom:3px solid var(--yel);flex-wrap:wrap}
+#nav .brand{font:700 1.7rem 'Barlow Condensed';color:var(--yel);text-decoration:none;margin-right:auto}
+#nav a{color:var(--ink);text-decoration:none;font-weight:500}#nav a:hover{color:var(--yel)}
+#v{max-width:1100px;margin:0 auto;padding:28px 20px 110px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:22px;margin:0 0 18px;backdrop-filter:blur(6px)}
+.hero{padding:40px 0 20px;max-width:720px}.hero p{font-size:1.15rem;color:#d3dde6}
+.btn{display:inline-block;background:var(--yel);color:#141414;border:0;border-radius:4px;padding:11px 20px;font:600 1rem Barlow;cursor:pointer;text-decoration:none}
+.btn.g{background:transparent;color:var(--ink);border:2px solid var(--mut)}.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #fff}
+label{display:block;margin:12px 0 4px;color:var(--mut);font-weight:500}
+input,select,textarea{width:100%;padding:10px;border-radius:4px;border:1px solid var(--line);background:#0a121a;color:var(--ink);font:inherit}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.stat{border-left:5px solid var(--yel);padding:8px 14px;background:rgba(255,255,255,.04)}.stat b{display:block;font:700 2.4rem 'Barlow Condensed'}
+.stat.CRITICAL{border-color:var(--red)}.stat.HIGH{border-color:var(--org)}.stat.ROUTINE{border-color:var(--grn)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}tbody tr{cursor:pointer}tbody tr:hover{background:rgba(255,194,26,.09)}
+.b{padding:2px 9px;border-radius:12px;font-weight:600;font-size:.9rem;background:#1c2b38;white-space:nowrap}.s{font-size:.85rem;color:var(--yel)}
+.err{color:#ff8b83;min-height:1.4em}.warn{background:#4a3a0c;border-left:5px solid var(--yel);padding:8px 12px;margin:10px 0}
+.tabs{display:flex;gap:8px;margin-bottom:8px}.tabs .btn{flex:1;text-align:center}
+.bar{display:flex;align-items:center;gap:10px;margin:5px 0}.bar i{display:block;height:14px;background:var(--yel);min-width:4px}.bar span:first-child{width:170px;color:var(--mut)}
+.two{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}img.ph{max-width:100%;border-radius:4px;border:1px solid var(--line)}
+#map{height:520px;border-radius:6px}.steps li{padding:5px 0;color:var(--mut);list-style:none}.steps li.on{color:var(--grn)}.steps li.on:before{content:"✓ "}
+.how{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.how div{border-top:4px solid var(--yel);border-radius:0 0 6px 6px;padding:14px 12px;color:#d3dde6;background:rgba(255,255,255,.03)}
+.how .hi{display:block;font-size:1.8rem;margin-bottom:6px}.how b{display:block;font:600 1.02rem Barlow;color:var(--ink);margin-bottom:4px}.how small{color:var(--mut);line-height:1.4}
+.warn.rej{background:#3a1414;border-left-color:var(--red)}
+@media(prefers-reduced-motion:reduce){#bg *{animation:none!important}}
+</style></head><body>
+<div id="bg"><svg class="sky" id="s1"></svg><svg class="sky f" id="s2"></svg><div id="road"></div></div>
+<nav id="nav"></nav><main id="v"></main>
+<script>
+const $=s=>document.querySelector(s),V=$("#v");
+// Refresh always starts on the first page, and the browser Back button is disabled.
+history.replaceState({t:1},"",location.pathname+location.search);
+history.pushState({t:1},"",location.pathname+location.search);
+let cur=location.hash;
+addEventListener("popstate",e=>{if(e.state)history.pushState({t:1},"",location.pathname+location.search+cur)});
+const E=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const CATS=["Road / Pothole","Drainage","Flooding / Waterlogging","Waste","Streetlight","Electricity","Water Supply","Sewage","Footpath","Traffic Infrastructure","Trees / Vegetation","Public Property","Other"];
+const DEPTS=["Roads / Public Works","Drainage Department","Waste Management","Electrical / Streetlight Department","Water Supply Department","Traffic / Public Works","Parks & Horticulture","Public Works","Municipal Office"];
+const STS=["PENDING_REVIEW","ASSIGNED","IN_PROGRESS","RESOLVED","REJECTED"],UR={CRITICAL:"🔴 Critical",HIGH:"🟠 High",ROUTINE:"🟢 Routine"};
+let U=JSON.parse(localStorage.u||"null");
+async function api(p,m="GET",b){const h={};if(localStorage.t)h.Authorization="Bearer "+localStorage.t;let body;
+ if(b instanceof FormData)body=b;else if(b){h["Content-Type"]="application/json";body=JSON.stringify(b)}
+ const r=await fetch("/api/"+p,{method:m,headers:h,body}),j=await r.json().catch(()=>({}));
+ if(r.status==401&&U){logout();}
+ if(!r.ok)throw new Error(typeof j.detail=="string"?j.detail:"Please check the form fields.");return j}
+const ub=u=>`<span class="b">${UR[u]||"-"}</span>`,sb=s=>`<span class="s">${E(s).replace(/_/g," ")}</span>`;
+const fu=c=>c.admin_urgency||c.ai_urgency,fc=c=>c.admin_category||c.ai_category;
+function logout(){localStorage.clear();U=null;location.hash="#/login"}
+function nav(){const a=U?.role=="ADMIN";$("#nav").innerHTML=`<a class="brand" href="#/">CivicAI</a><a href="#/how">How it works</a>`+
+ (U?(a?`<a href="#/admin">Dashboard</a><a href="#/map">Map</a>`:`<a href="#/dash">Dashboard</a><a href="#/report">Report a problem</a><a href="#/mine">My complaints</a>`)+`<a href="#/profile">${E(U.name)}</a><a href="#" id="lo">Logout</a>`:`<a href="#/login">Login</a><a href="#/register">Register</a>`);
+ if($("#lo"))$("#lo").onclick=e=>{e.preventDefault();logout()}}
+function skyline(el,seed,h,col){let x=0,s="",r=seed;const R=()=>(r=(r*9301+49297)%233280)/233280;
+ while(x<1600){const w=40+R()*60,ht=h*(.35+R()*.65);s+=`<rect x="${x}" y="${300-ht}" width="${w}" height="${ht}" fill="${col}"/>`;
+  for(let wy=300-ht+10;wy<290;wy+=16)for(let wx=x+6;wx<x+w-8;wx+=14)if(R()>.72)s+=`<rect x="${wx}" y="${wy}" width="5" height="7" fill="#ffd36b" opacity=".75"/>`;x+=w+4}
+ el.setAttribute("viewBox","0 0 1600 300");el.setAttribute("preserveAspectRatio","none");el.innerHTML=s+s.replace(/x="([\d.]+)"/g,(m,n)=>`x="${+n+1600}"`);el.setAttribute("viewBox","0 0 3200 300")}
+skyline($("#s1"),7,190,"#152636");skyline($("#s2"),21,240,"#0d1822");
+["🚗","🚌","🛵","🚕"].forEach((c,i)=>{const d=document.createElement("div");d.className="car";d.textContent=c;d.style.animationDuration=(14+i*5)+"s";d.style.animationDelay=(-i*6)+"s";$("#road").append(d)});
+["🚧","🚧"].forEach((c,i)=>{const d=document.createElement("div");d.className="cone";d.textContent=c;d.style.left=(22+i*41)+"%";$("#bg").append(d)});
+
+const need=r=>{if(!U){location.hash="#/login";return 0}if(r&&U.role!=r){V.innerHTML=`<div class="panel"><h2>403 Forbidden</h2><p>Administrator privileges required.</p></div>`;return 0}return 1};
+const table=(rows,cols)=>rows.length?`<table><thead><tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr data-id="${r.id}">${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</tbody></table>`:`<p>No complaints yet.</p>`;
+const bind=()=>V.querySelectorAll("tbody tr").forEach(t=>t.onclick=()=>location.hash="#/c/"+t.dataset.id);
+const CO=[["ID",r=>"#"+r.id],["Problem",r=>E(fc(r))],["Area",r=>E(r.area||"GPS")],["AI urgency",r=>ub(fu(r))],["Status",r=>sb(r.status)]];
+const bars=o=>{const m=Math.max(1,...Object.values(o));return Object.entries(o).map(([k,v])=>`<div class="bar"><span>${E(k)}</span><i style="width:${v/m*55}%"></i><b>${v}</b></div>`).join("")||"<p>No data yet.</p>"};
+
+const pages={
+ home:()=>`<section class="hero"><h1>Report the problem. We help the city fix the urgent ones first.</h1><p>Send a photo, a short description and the location. CivicAI reads the report, predicts how urgent it is and suggests which department should act. An officer reviews every result.</p>
+ <a class="btn" href="#/${U?U.role=="ADMIN"?"admin":"report":"register"}">Report a problem</a> <a class="btn g" href="#/how">See how it works</a></section>`+pages.how(),
+ how:()=>`<div class="panel"><h2>🚦 From your phone to the right desk</h2><div class="how">${[["📸","Snap a photo","Take a photo of the problem, add a short description."],["📍","Share the spot","Use GPS or type the area and a nearby landmark."],["🤖","AI reads it","AI looks at the photo and text and works out what it is."],["🚨","Urgency is set","It's flagged 🔴 Critical, 🟠 High or 🟢 Routine."],["🏢","Department picked","AI suggests which department should act on it."],["👮","Admin checks it","An officer reviews the AI result and can correct it."],["🔧","It gets fixed","The department resolves it and uploads proof."],["✅","You're notified","Track your report until it's marked resolved."]].map(([e,t,d])=>`<div><span class="hi">${e}</span><b>${t}</b><small>${d}</small></div>`).join("")}</div></div>`,
+ login(){V.innerHTML=`<div class="panel" style="max-width:440px;margin:auto"><div class="tabs"><button class="btn" id="tc">Citizen</button><button class="btn g" id="ta">Admin</button></div><h2 id="lt">Citizen login</h2>
+ <label>Email or phone number</label><input id="em" type="text" autocomplete="username"><label>Password</label><input id="pw" type="password"><p class="err" id="er"></p><button class="btn" id="go">Log in</button> <a class="btn g" href="#/register">Create account</a><p id="hint"></p></div>`;let adm=0;
+ const set=a=>{adm=a;$("#tc").className="btn"+(a?" g":"");$("#ta").className="btn"+(a?"":" g");$("#lt").textContent=a?"Admin login":"Citizen login";$("#hint").innerHTML=a?"Demo admin: admin@civicai.local / Admin@123":""};
+ $("#tc").onclick=()=>set(0);$("#ta").onclick=()=>set(1);
+ $("#go").onclick=async()=>{try{const r=await api("auth/login","POST",{email:$("#em").value,password:$("#pw").value,admin:!!adm});enter(r)}catch(e){$("#er").textContent=e.message}}},
+ register(){V.innerHTML=`<div class="panel" style="max-width:440px;margin:auto"><h2>Create a citizen account</h2><label>Full name</label><input id="n"><label>Email</label><input id="em" type="email"><label>Phone</label><input id="ph"><label>City</label><input id="ci"><label>Password (6+ characters)</label><input id="pw" type="password"><p class="err" id="er"></p><button class="btn" id="go">Create account</button> <a class="btn g" href="#/login">I already have an account</a></div>`;
+ $("#go").onclick=async()=>{try{enter(await api("auth/register","POST",{name:$("#n").value,email:$("#em").value,phone:$("#ph").value,city:$("#ci").value,password:$("#pw").value}))}catch(e){$("#er").textContent=e.message}}},
+ async dash(){if(!need("CITIZEN"))return;const c=await api("complaints/my"),n=s=>c.filter(x=>x.status==s).length;
+ V.innerHTML=`<h2>Welcome, ${E(U.name)}</h2><div class="grid"><div class="stat"><b>${c.length}</b>Problems posted</div><div class="stat"><b>${n("PENDING_REVIEW")}</b>Pending review</div><div class="stat"><b>${n("ASSIGNED")+n("IN_PROGRESS")}</b>In progress</div><div class="stat"><b>${n("RESOLVED")}</b>Resolved</div></div><p><a class="btn" href="#/report">Report a problem</a></p><div class="panel"><h3>Recent complaints</h3>${table(c.slice(0,6),CO)}</div>`;bind()},
+ report(){if(!need("CITIZEN"))return;V.innerHTML=`<div class="panel" style="max-width:640px;margin:auto"><h2>📢 Report a problem</h2><p style="color:var(--mut)">🤖 Our AI reads what you send and suggests urgency + department. 👮 An admin always checks it before anything happens.</p>
+ <h3>📸 Photo of the problem *</h3><input id="ph" type="file" accept="image/*" capture="environment"><img id="pv" class="ph" hidden>
+ <h3>📝 What is wrong? *</h3><textarea id="ds" rows="4" placeholder="Example: Large pothole near the bus stop. Water collects in it."></textarea>
+ <h3>📍 Location *</h3><button class="btn g" id="gps" type="button">Use my location</button> <span id="gl"></span>
+ <label>Area or street</label><input id="ar"><label>Nearby landmark</label><input id="lm"><p class="err" id="er"></p><button class="btn" id="go">Submit complaint</button><ol class="steps" id="st" hidden></ol></div>`;let la,lo;
+ $("#ph").onchange=e=>{const f=e.target.files[0];if(f){$("#pv").src=URL.createObjectURL(f);$("#pv").hidden=0}};
+ $("#gps").onclick=()=>navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{la=p.coords.latitude;lo=p.coords.longitude;$("#gl").textContent=`Saved ${la.toFixed(4)}, ${lo.toFixed(4)}`},()=>$("#gl").textContent="Location blocked. Type the area instead."):0;
+ $("#go").onclick=async()=>{const f=$("#ph").files[0];$("#er").textContent="";if(!f)return $("#er").textContent="Add a photo of the problem.";
+  const fd=new FormData();fd.append("photo",f);fd.append("description",$("#ds").value);fd.append("area",$("#ar").value);fd.append("landmark",$("#lm").value);if(la!=null){fd.append("latitude",la);fd.append("longitude",lo)}
+  const L=["Photo received","Description analysed","Location processed","Problem identified","Urgency evaluated","Department suggested"],ol=$("#st");ol.hidden=0;ol.innerHTML=L.map(t=>`<li>${t}</li>`).join("");$("#go").disabled=1;let i=0;const iv=setInterval(()=>{if(i<L.length)ol.children[i++].className="on"},700);
+  try{const c=await api("complaints","POST",fd);clearInterval(iv);location.hash="#/c/"+c.id}catch(e){clearInterval(iv);ol.hidden=1;$("#go").disabled=0;$("#er").textContent=e.message}}},
+ async mine(){if(!need("CITIZEN"))return;const c=await api("complaints/my");V.innerHTML=`<div class="panel"><h2>My complaints</h2><input id="sq" placeholder="Search by number or text">${table(c,CO)}</div>`;bind();
+ $("#sq").oninput=e=>{const t=e.target.value.toLowerCase().replace("#","");V.querySelectorAll("tbody tr").forEach(r=>r.hidden=!r.textContent.toLowerCase().includes(t))}},
+ profile(){if(!need())return;V.innerHTML=`<div class="panel"><h2>${E(U.name)}</h2><p>${E(U.email)}<br>${E(U.city||"")}<br>Role: ${U.role}</p></div>`},
+ async admin(){if(!need("ADMIN"))return;const st=await api("admin/statistics"),u=st.urgency;
+ V.innerHTML=`<h2>Admin dashboard</h2><div class="grid"><div class="stat"><b>${st.total}</b>Total</div>${["CRITICAL","HIGH","ROUTINE"].map(k=>`<div class="stat ${k}"><b>${u[k]||0}</b>${UR[k]}</div>`).join("")}</div>
+ <div class="two" style="margin-top:18px"><div class="panel"><h3>By category</h3>${bars(st.category)}</div><div class="panel"><h3>By status</h3>${bars(st.status)}<h3>By area</h3>${bars(st.area)}</div></div>
+ <div class="panel"><h3>All complaints</h3><div class="grid"><select id="fc"><option value="">Any category</option>${CATS.map(c=>`<option>${c}</option>`)}</select><select id="fu"><option value="">Any urgency</option>${Object.keys(UR).map(k=>`<option value="${k}">${UR[k]}</option>`)}</select><select id="fs"><option value="">Any status</option>${STS.map(c=>`<option>${c}</option>`)}</select><select id="fd"><option value="">Any department</option>${DEPTS.map(c=>`<option>${c}</option>`)}</select><input id="fa" placeholder="Area"><input id="fq" placeholder="Search ID, text, landmark"></div><div id="tb"></div></div>`;
+ const load=async()=>{const p=new URLSearchParams({category:$("#fc").value,urgency:$("#fu").value,status:$("#fs").value,department:$("#fd").value,area:$("#fa").value,search:$("#fq").value});
+  $("#tb").innerHTML=table(await api("admin/complaints?"+p),[...CO.slice(0,2),["Area",CO[2][1]],["AI urgency",r=>ub(r.ai_urgency)+(r.admin_urgency?" → "+ub(r.admin_urgency):"")],["Department",r=>E(r.assigned_department||r.suggested_department)],CO[4]]);bind()};
+ V.querySelectorAll("select,input").forEach(e=>e.oninput=load);load()},
+ async map(){if(!need("ADMIN"))return;const c=await api("admin/complaints");V.innerHTML=`<div class="panel"><h2>Complaint map</h2><div id="map"></div></div>`;
+ const m=L.map("map").setView([13.0827,80.2707],11);L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap"}).addTo(m);const pts=[];
+ c.filter(x=>x.latitude!=null).forEach(x=>{const col={CRITICAL:"#ff5a4f",HIGH:"#ff9a2e",ROUTINE:"#48c283"}[fu(x)];pts.push([x.latitude,x.longitude]);
+  L.circleMarker([x.latitude,x.longitude],{radius:9,color:"#111",weight:1,fillColor:col,fillOpacity:.9}).addTo(m).bindPopup(`<b>#${x.id} ${E(fc(x))}</b><br>${UR[fu(x)]} · ${E(x.status)}<br><a href="#/c/${x.id}">Open</a>`)});
+ if(pts.length)m.fitBounds(pts,{maxZoom:15,padding:[30,30]})},
+ async detail(id){if(!need())return;const c=await api("complaints/"+id),A=U.role=="ADMIN",o=(a,v)=>a.map(x=>`<option ${x==v?"selected":""}>${x}</option>`).join("");
+ V.innerHTML=`<div class="two"><div class="panel"><h2>Complaint #${c.id}</h2><img class="ph" src="${E(c.photo_url)}" alt="Problem photo"><p>${E(c.description)}</p><p>📍 ${E(c.area||"GPS location")}${c.landmark?" · near "+E(c.landmark):""}${c.latitude!=null?`<br><small>${(+c.latitude).toFixed(5)}, ${(+c.longitude).toFixed(5)}</small>`:""}</p><p>Status: ${sb(c.status)}</p>
+ ${c.resolved_photo_url?`<p>✅ Proof it's fixed:</p><img class="ph" src="${E(c.resolved_photo_url)}" alt="Resolved photo">`:""}
+ ${c.citizen_update?`<div class="warn ${c.status=="REJECTED"?"rej":""}">${c.status=="REJECTED"?"❌ Rejected — ":"📢 Update from authority: "}${E(c.citizen_update)}</div>`:""}</div>
+ <div><div class="panel"><h3>🤖 AI analysis</h3><p>Category: <b>${E(c.ai_category)}</b> / ${E(c.ai_subcategory)}<br>AI-predicted urgency: ${ub(c.ai_urgency)}<br>Confidence: <b>${Math.round(c.ai_confidence*100)}%</b><br>Suggested department: ${E(c.suggested_department)}</p><p>${E(c.ai_reason)}</p>${c.low_confidence?`<div class="warn">⚠ Low confidence. Human review required.</div>`:""}${c.admin_urgency||c.admin_category||c.assigned_department?`<p>Admin decision: ${E(c.admin_category||"")} ${c.admin_urgency?ub(c.admin_urgency):""} ${E(c.assigned_department||"")}</p>`:""}
+ <details><summary style="cursor:pointer;color:var(--yel)">How does the AI decide urgency?</summary><p style="color:var(--mut);font-size:.92rem">If a photo+text AI model is connected, it looks at both together. Otherwise CivicAI scans your description for keywords: words like "open manhole", "live wire" or "fallen tree" mark it 🔴 Critical; words like "flood", "broken", "leak" or "school" mark it 🟠 High; anything else is 🟢 Routine. Confidence rises with the number of matching keywords and how detailed the description is — reports under 60% confidence are always flagged for a human to review before anything happens.</p></details></div>
+ ${A?`<div class="panel"><h3>👮 Admin decision</h3><label>Category</label><select id="dc">${o(CATS,fc(c))}</select><label>Urgency</label><select id="du">${o(Object.keys(UR),fu(c))}</select><label>Department</label><select id="dd">${o(DEPTS,c.assigned_department||c.suggested_department)}</select><label>Status</label><select id="ds">${o(STS,c.status)}</select>
+ <label>Override reason (required if you change the AI result)</label><input id="dr" value="${E(c.override_reason||"")}"><label>Internal notes (required if rejecting — e.g. wrong problem, duplicate, spam)</label><textarea id="dn" rows="2">${E(c.admin_notes||"")}</textarea><label>Update for the citizen</label><textarea id="dm" rows="2">${E(c.citizen_update||"")}</textarea><p class="err" id="er"></p>
+ <button class="btn" id="as">Assign</button> <button class="btn g" id="up">Update status &amp; save</button></div>
+ <div class="panel"><h3>✅ Mark as resolved</h3><p style="color:var(--mut);font-size:.92rem">Upload a photo proving the problem was fixed. This sets the status to Resolved.</p><label>Proof photo *</label><input id="rp" type="file" accept="image/*"><label>Note for the citizen</label><input id="rn" placeholder="Optional"><p class="err" id="rer"></p><button class="btn" id="rs">Upload photo &amp; resolve</button></div>`:""}</div></div>`;
+ if(A){const send=async(assign)=>{try{await api("admin/complaints/"+id,"PATCH",{category:$("#dc").value,urgency:$("#du").value,department:$("#dd").value,status:assign&&c.status=="PENDING_REVIEW"?"ASSIGNED":$("#ds").value,override_reason:$("#dr").value||null,admin_notes:$("#dn").value,citizen_update:$("#dm").value});pages.detail(id)}catch(e){$("#er").textContent=e.message}};
+  $("#as").onclick=()=>send(1);$("#up").onclick=()=>send(0);
+  $("#rs").onclick=async()=>{const f=$("#rp").files[0];$("#rer").textContent="";if(!f)return $("#rer").textContent="Add a photo showing the fix.";
+   const fd=new FormData();fd.append("photo",f);fd.append("notes",$("#rn").value);
+   try{await api("admin/complaints/"+id+"/resolve","POST",fd);pages.detail(id)}catch(e){$("#rer").textContent=e.message}}}}
+};
+function enter(r){localStorage.t=r.token;localStorage.u=JSON.stringify(r.user);U=r.user;location.hash=U.role=="ADMIN"?"#/admin":"#/dash"}
+async function route(){cur=location.hash;history.replaceState({t:1},"",location.href);nav();const [,a,b]=(location.hash||"#/").split("/");const k=a==""?"home":a=="c"?"detail":a;
+ try{const f=pages[k]||pages.home;const h=await f(b);if(typeof h=="string")V.innerHTML=h}catch(e){V.innerHTML=`<div class="panel"><h2>Something went wrong</h2><p>${E(e.message)}</p></div>`}}
+addEventListener("hashchange",()=>{if(location.hash!==cur)route()});route();
+</script></body></html>
